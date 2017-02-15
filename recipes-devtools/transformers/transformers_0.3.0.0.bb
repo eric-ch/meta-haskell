@@ -4,7 +4,7 @@ LICENSE = "GHCL"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=315290737f6293f698ed37113aa1226d"
 SECTION = "devel/haskell"
 
-SRC_URI = "http://hackage.haskell.org/package/${PN}-${PV}/${PN}-${PV}.tar.gz"
+SRC_URI = "http://hackage.haskell.org/package/${BPN}-${PV}/${BPN}-${PV}.tar.gz"
 SRC_URI[md5sum] = "852dc0b79cc2bcb39136287d3dd385e5"
 SRC_URI[sha256sum] = "e5aa0c1ec97ad98c389e78f59aca25ab028980a7068a3e585e39564662739591"
 
@@ -12,5 +12,5 @@ BBCLASSEXTEND = "native"
 
 inherit ghc-pkg
 
-S = "${WORKDIR}/${PN}-${PV}"
+S = "${WORKDIR}/${BPN}-${PV}"
 PR = "r1"
