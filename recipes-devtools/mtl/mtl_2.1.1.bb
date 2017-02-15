@@ -3,7 +3,7 @@ HOMEPAGE = "https://hackage.haskell.org/package/mtl"
 LICENSE = "GHCL"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=315290737f6293f698ed37113aa1226d"
 SECTION = "devel/haskell"
-DEPENDS = "transformers"
+DEPENDS =+ "transformers"
 
 SRC_URI = "http://hackage.haskell.org/package/${BPN}-${PV}/${BPN}-${PV}.tar.gz"
 SRC_URI[md5sum] = "0654be687f1492a2ff30cf6f3fb7eed0"

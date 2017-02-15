@@ -38,6 +38,11 @@ do_update_local_pkg_database() {
     ghc-pkg init "${GHC_PACKAGE_DATABASE}"
 }
 addtask do_update_local_pkg_database before do_configure after do_patch
+# Ensure that populate_staging is done for every item in DEPENDS before we
+# update the local package database. runghc will not be able to process
+# dependencies otherwise.
+do_update_local_pkg_database[deptask] = "do_populate_sysroot"
+
 do_update_local_pkg_database_append_class-target() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
