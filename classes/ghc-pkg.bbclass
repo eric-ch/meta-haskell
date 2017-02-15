@@ -81,10 +81,9 @@ EOF
 exec ${CC} ${CFLAGS} "\$@"
 EOF
     chmod +x ghc-cc
-# ghc will pass -Wl options, so using gcc not ld.
+# ghc will pass -Wl options, so using gcc (CCLD) not ld.
     cat << EOF > ghc-ld
 #!/bin/sh
-echo ${CCLD} ${LDFLAGS} "\$@"
 exec ${CCLD} ${LDFLAGS} "\$@"
 EOF
     chmod +x ghc-ld
@@ -140,3 +139,16 @@ do_install() {
     install -m 644 ${S}/${BPN}-${PV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
     popd > /dev/null
 }
+
+do_fixup_rpath() {
+    ghc_version=$(ghc-pkg --version)
+    ghc_version=${ghc_version##* }
+
+    RPATH=$(chrpath ${D}${libdir}/${BPN}-${PV}/ghc-${ghc_version}/libHS${BPN}-${PV}*.so)
+    RPATH=${RPATH##*RPATH=}
+    FIXED_RPATH=$(echo $RPATH | sed -e "s|${STAGING_LIBDIR}|${libdir}|g")
+
+    chrpath -r ${RPATH} --replace ${FIXED_RPATH} ${D}${libdir}/${BPN}-${PV}/ghc-${ghc_version}/libHS${BPN}-${PV}*.so
+
+}
+addtask do_fixup_rpath after do_install before do_package
