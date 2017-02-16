@@ -2,7 +2,6 @@ DESCRIPTION = "Monad classes using functional dependencies, with instances for v
 HOMEPAGE = "https://hackage.haskell.org/package/mtl"
 LICENSE = "GHCL"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=315290737f6293f698ed37113aa1226d"
-SECTION = "devel/haskell"
 DEPENDS =+ "transformers"
 
 SRC_URI = "http://hackage.haskell.org/package/${BPN}-${PV}/${BPN}-${PV}.tar.gz"
@@ -11,5 +10,4 @@ SRC_URI[sha256sum] = "9250831796b1678380d915d2953ce94fa466af8d5c92d0c569963f0f0b
 
 inherit ghc-pkg
 
-S = "${WORKDIR}/${BPN}-${PV}"
 PR = "r1"

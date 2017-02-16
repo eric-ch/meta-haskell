@@ -1,6 +1,12 @@
-DEPENDS += "ghc gmp-compat"
-RDEPENDS_${PN}_class-target += "ghc-runtime"
-RDEPENDS_${PN}_class-native += "ghc-native"
+SECTION = "devel/haskell"
+
+SRC_URI = "http://hackage.haskell.org/package/${BPN}-${PV}/${BPN}-${PV}.tar.gz"
+
+S = "${WORKDIR}/${BPN}-${PV}"
+
+DEPENDS += "ghc"
+RDEPENDS_${PN}_class-target += "ghc-runtime "
+RDEPENDS_${PN}_class-native += "ghc-native "
 
 PACKAGES = " \
     ${PN} \
@@ -38,6 +44,7 @@ do_update_local_pkg_database() {
     ghc-pkg init "${GHC_PACKAGE_DATABASE}"
 }
 addtask do_update_local_pkg_database before do_configure after do_patch
+do_update_local_pkg_database[doc] = "Put together a local Haskell package database for runghc to use, and amend configuration to match bitbake environment."
 # Ensure that populate_staging is done for every item in DEPENDS before we
 # update the local package database. runghc will not be able to process
 # dependencies otherwise.
@@ -90,6 +97,7 @@ EOF
     popd > /dev/null
 }
 addtask do_makeup_wrappers before do_configure after do_patch
+do_local_package_conf[doc] = "Generate local wrappers for the compiler to pass bitbake environment through ghc."
 
 do_configure() {
     pushd ${S} > /dev/null
@@ -127,6 +135,7 @@ do_local_package_conf() {
     popd > /dev/null
 }
 addtask do_local_package_conf before do_install after do_compile
+do_local_package_conf[doc] = "Generate Haskell package configuration."
 
 do_install() {
     pushd ${S} > /dev/null
@@ -140,7 +149,11 @@ do_install() {
     popd > /dev/null
 }
 
+# Amend the rpath to match target environment.
 do_fixup_rpath() {
+    :
+}
+do_fixup_rpath_class-target() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
 
@@ -152,3 +165,4 @@ do_fixup_rpath() {
 
 }
 addtask do_fixup_rpath after do_install before do_package
+do_fixup_rpath[doc] = "Amend rpath set by GHC to comply with target's environment."
