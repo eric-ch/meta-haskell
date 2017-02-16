@@ -1,6 +1,6 @@
 DESCRIPTION = "A portable library of functor and monad transformers, inspired by the paper "Functional Programming with Overloading and Higher-Order Polymorphism", by Mark P Jones, in Advanced School of Functional Programming, 1995"
 HOMEPAGE = "https://hackage.haskell.org/package/transformers"
-LICENSE = "GHCL"
+LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=315290737f6293f698ed37113aa1226d"
 SECTION = "devel/haskell"
 
@@ -9,7 +9,6 @@ SRC_URI[sha256sum] = "e5aa0c1ec97ad98c389e78f59aca25ab028980a7068a3e585e39564662
 
 BBCLASSEXTEND = "native"
 
-inherit ghc-pkg
+inherit hackage
 
-S = "${WORKDIR}/${BPN}-${PV}"
 PR = "r1"

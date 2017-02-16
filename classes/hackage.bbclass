@@ -1,8 +1,12 @@
+# Prefix to avoid conflicts with synonyms packages (e.g, curl).
+HPN = "${@d.getVar("BPN", True).split("hkg-", 1)[1]}"
+
+HOMEPAGE = "https://hackage.haskell.org/package/${HPN}"
 SECTION = "devel/haskell"
 
-SRC_URI = "http://hackage.haskell.org/package/${BPN}-${PV}/${BPN}-${PV}.tar.gz"
+SRC_URI = "http://hackage.haskell.org/package/${HPN}-${PV}/${HPN}-${PV}.tar.gz"
 
-S = "${WORKDIR}/${BPN}-${PV}"
+S = "${WORKDIR}/${HPN}-${PV}"
 
 DEPENDS += "ghc"
 RDEPENDS_${PN}_class-target += "ghc-runtime "
@@ -16,20 +20,20 @@ PACKAGES = " \
     ${PN}-dev \
 "
 FILES_${PN} = " \
-    ${libdir}/${BPN}-${PV}/ghc-*/libH*.so \
+    ${libdir}/${HPN}-${PV}/ghc-*/libH*.so \
     ${libdir}/ghc-*/package.conf.d/*.conf \
 "
 FILES_${PN}-doc = " \
     ${datadir}/* \
 "
 FILES_${PN}-staticdev = " \
-    ${libdir}/${BPN}-${PV}/ghc-*/libHS*.a \
+    ${libdir}/${HPN}-${PV}/ghc-*/libHS*.a \
 "
 FILES_${PN}-dbg = " \
-    ${libdir}/${BPN}-${PV}/ghc-*/*.o \
+    ${libdir}/${HPN}-${PV}/ghc-*/*.o \
 "
 FILES_${PN}-dev = " \
-    ${libdir}/${BPN}-${PV}/ghc-*/* \
+    ${libdir}/${HPN}-${PV}/ghc-*/* \
 "
 
 RUNGHC = "runghc"
@@ -124,7 +128,7 @@ do_local_package_conf() {
     ${RUNGHC} Setup.*hs register \
         --gen-pkg-conf \
         --verbose
-    sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${BPN}-${PV}*.conf
+    sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${PV}*.conf
     popd > /dev/null
 }
 addtask do_local_package_conf before do_install after do_compile
@@ -138,7 +142,7 @@ do_install() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
     install -m 755 -d ${D}${libdir}/ghc-${ghc_version}/package.conf.d
-    install -m 644 ${S}/${BPN}-${PV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
+    install -m 644 ${S}/${HPN}-${PV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
     popd > /dev/null
 }
 
@@ -150,11 +154,11 @@ do_fixup_rpath_class-target() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
 
-    RPATH=$(chrpath ${D}${libdir}/${BPN}-${PV}/ghc-${ghc_version}/libHS${BPN}-${PV}*.so)
+    RPATH=$(chrpath ${D}${libdir}/${HPN}-${PV}/ghc-${ghc_version}/libHS${HPN}-${PV}*.so)
     RPATH=${RPATH##*RPATH=}
     FIXED_RPATH=$(echo $RPATH | sed -e "s|${STAGING_LIBDIR}|${libdir}|g")
 
-    chrpath -r ${RPATH} --replace ${FIXED_RPATH} ${D}${libdir}/${BPN}-${PV}/ghc-${ghc_version}/libHS${BPN}-${PV}*.so
+    chrpath -r ${RPATH} --replace ${FIXED_RPATH} ${D}${libdir}/${HPN}-${PV}/ghc-${ghc_version}/libHS${HPN}-${PV}*.so
 
 }
 addtask do_fixup_rpath after do_install before do_package
