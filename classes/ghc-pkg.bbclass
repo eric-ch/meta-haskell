@@ -78,11 +78,6 @@ do_update_local_pkg_database_append_class-native() {
 # *} -otpc ${CC#* }" but no... it does not manage to parse the options correctly...
 do_makeup_wrappers() {
     pushd ${S} > /dev/null
-    cat << EOF > ghc-cpp
-#!/bin/sh
-exec ${CPP} ${CPPFLAGS} "\$@"
-EOF
-    chmod +x ghc-cpp
     cat << EOF > ghc-cc
 #!/bin/sh
 exec ${CC} ${CFLAGS} "\$@"
@@ -105,8 +100,7 @@ do_configure() {
     # TODO: Setup.hs || Setup.lhs
     ${RUNGHC} Setup.*hs configure \
         --package-db="${GHC_PACKAGE_DATABASE}" \
-        --ghc-options='-pgmP ./ghc-cpp
-                       -pgmc ./ghc-cc
+        --ghc-options='-pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --enable-shared \
@@ -118,8 +112,7 @@ do_configure() {
 do_compile() {
     pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs build \
-        --ghc-options='-pgmP ./ghc-cpp
-                       -pgmc ./ghc-cc
+        --ghc-options='-pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --verbose
