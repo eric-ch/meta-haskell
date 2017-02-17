@@ -26,6 +26,7 @@ PACKAGES = " \
 FILES_${PN} = " \
     ${libdir}/${HPN}-${PV}/ghc-*/libH*.so \
     ${libdir}/ghc-*/package.conf.d/*.conf \
+    ${bindir}/* \
 "
 FILES_${PN}-doc = " \
     ${datadir}/* \
