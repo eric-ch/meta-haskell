@@ -1,0 +1,109 @@
+Index: network-2.2.1.7/cbits/HsNet.c
+===================================================================
+--- network-2.2.1.7.orig/cbits/HsNet.c
++++ network-2.2.1.7/cbits/HsNet.c
+@@ -4,5 +4,44 @@
+  * static versions of the inline functions from HsNet.h
+  * -------------------------------------------------------------------------- */
+ 
+-#define INLINE
+ #include "HsNet.h"
++
++char * my_inet_ntoa(
++#if defined(HAVE_WINSOCK2_H)
++             u_long addr
++#elif defined(HAVE_IN_ADDR_T)
++             in_addr_t addr
++#elif defined(HAVE_INTTYPES_H)
++             u_int32_t addr
++#else
++             unsigned long addr
++#endif
++	    )
++{
++    struct in_addr a;
++    a.s_addr = addr;
++    return inet_ntoa(a);
++}
++
++#ifdef HAVE_GETADDRINFO
++int hsnet_getnameinfo(const struct sockaddr* a,socklen_t b, char* c,
++# if defined(HAVE_WINSOCK2_H) && !defined(__CYGWIN__)
++                  DWORD d, char* e, DWORD f, int g)
++# else
++                  socklen_t d, char* e, socklen_t f, int g)
++# endif
++{
++  return getnameinfo(a,b,c,d,e,f,g);
++}
++
++int hsnet_getaddrinfo(const char *hostname, const char *servname,
++		  const struct addrinfo *hints, struct addrinfo **res)
++{
++    return getaddrinfo(hostname, servname, hints, res);
++}
++
++void hsnet_freeaddrinfo(struct addrinfo *ai)
++{
++    freeaddrinfo(ai);
++}
++#endif
+Index: network-2.2.1.7/include/HsNet.h
+===================================================================
+--- network-2.2.1.7.orig/include/HsNet.h
++++ network-2.2.1.7/include/HsNet.h
+@@ -130,8 +130,7 @@ recvAncillary(int  sock,
+ 
+ #endif /* HAVE_WINSOCK2_H && !__CYGWIN */
+ 
+-INLINE char *
+-my_inet_ntoa(
++char * my_inet_ntoa(
+ #if defined(HAVE_WINSOCK2_H)
+              u_long addr
+ #elif defined(HAVE_IN_ADDR_T)
+@@ -141,37 +140,19 @@ my_inet_ntoa(
+ #else
+              unsigned long addr
+ #endif
+-	    )
+-{ 
+-    struct in_addr a;
+-    a.s_addr = addr;
+-    return inet_ntoa(a);
+-}
++	    );
+ 
+ #ifdef HAVE_GETADDRINFO
+-INLINE int
+-hsnet_getnameinfo(const struct sockaddr* a,socklen_t b, char* c,
++int hsnet_getnameinfo(const struct sockaddr* a,socklen_t b, char* c,
+ # if defined(HAVE_WINSOCK2_H) && !defined(__CYGWIN__)
+-                  DWORD d, char* e, DWORD f, int g)
++                  DWORD d, char* e, DWORD f, int g);
+ # else
+-                  socklen_t d, char* e, socklen_t f, int g)
++                  socklen_t d, char* e, socklen_t f, int g);
+ # endif
+-{
+-  return getnameinfo(a,b,c,d,e,f,g);
+-}
+ 
+-INLINE int
+-hsnet_getaddrinfo(const char *hostname, const char *servname,
+-		  const struct addrinfo *hints, struct addrinfo **res)
+-{
+-    return getaddrinfo(hostname, servname, hints, res);
+-}
+-
+-INLINE void
+-hsnet_freeaddrinfo(struct addrinfo *ai)
+-{
+-    freeaddrinfo(ai);
+-}
++int hsnet_getaddrinfo(const char *hostname, const char *servname,
++		  const struct addrinfo *hints, struct addrinfo **res);
++void hsnet_freeaddrinfo(struct addrinfo *ai);
+ #endif
+ 
+ #endif

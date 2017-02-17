@@ -2,10 +2,11 @@ DESCRIPTION = "Parsec is designed from scratch as an industrial-strength parser 
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=4b36c87a94916f61cc02d0d4211317ff"
 
+inherit hackage
+
 SRC_URI[md5sum] = "310bf233dcf8ec678c427b1198700b53"
 SRC_URI[sha256sum] = "962d39944bae18b0fea60961c77513f455f95c0f67ae4b10ab15484a27b6fb98"
-DEPENDS += "hkg-mtl"
 
-inherit hackage
+DEPENDS += "hkg-mtl"
 
 PR = "r1"
