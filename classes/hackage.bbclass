@@ -35,6 +35,7 @@ FILES_${PN}-staticdev = " \
 "
 FILES_${PN}-dbg = " \
     ${libdir}/${HPN}-${PV}/ghc-*/*.o \
+    ${prefix}/src/debug \
 "
 FILES_${PN}-dev = " \
     ${libdir}/${HPN}-${PV}/ghc-*/* \
