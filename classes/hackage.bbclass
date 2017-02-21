@@ -11,4 +11,4 @@ BBCLASSEXTEND = "native"
 # ipk do not handle upper-case package-name.
 HPN ?= "${@d.getVar("BPN", True).split("hkg-", 1)[1]}"
 
-inherit ghc
+inherit haskell
