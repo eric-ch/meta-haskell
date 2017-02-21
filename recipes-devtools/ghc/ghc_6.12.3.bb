@@ -15,7 +15,7 @@ SRC_URI[md5sum] = "8ed8540571f7b10d8caf782755e35818"
 SRC_URI[sha256sum] = "d86c82cd349adfacdbccd7fb67e7218d42b39bb748d36bfeb6ad9f172da629f5"
 
 # Any i.86 really.
-COMPATIBLE_MACHINE_class-target = "(qemux86)"
+COMPATIBLE_MACHINE_class-target = "(qemux86|xenclient-dom0|xenclient-ndvm)"
 
 PR = "r1"
 
