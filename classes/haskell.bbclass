@@ -5,7 +5,7 @@ HPV ?= "${PV}"
 
 SECTION = "devel/haskell"
 
-DEPENDS += "ghc-native"
+DEPENDS += "ghc ghc-native"
 RDEPENDS_${PN}_class-target += "ghc-runtime "
 RDEPENDS_${PN}_class-native += "ghc-native "
 
