@@ -46,12 +46,12 @@ do_update_local_pkg_database() {
     rm -rf "${GHC_PACKAGE_DATABASE}"
     ghc-pkg init "${GHC_PACKAGE_DATABASE}"
 }
-addtask do_update_local_pkg_database before do_configure after do_patch
+addtask do_update_local_pkg_database before do_configure after do_prepare_recipe_sysroot
 do_update_local_pkg_database[doc] = "Put together a local Haskell package database for runghc to use, and amend configuration to match bitbake environment."
-# Ensure that populate_staging is done for every item in DEPENDS before we
-# update the local package database. runghc will not be able to process
-# dependencies otherwise.
-do_update_local_pkg_database[deptask] = "do_populate_sysroot"
+# Ensure that the recipe's sysroot is populated by every item in DEPENDS before
+# we update the local package database. runghc will not be able to process
+# dependencies otherwise, neither will ghc-pkg be there if not installed on the
+# host.
 
 do_update_local_pkg_database_append_class-target() {
     ghc_version=$(ghc-pkg --version)
