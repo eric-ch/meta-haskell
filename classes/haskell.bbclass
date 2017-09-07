@@ -104,7 +104,8 @@ do_configure() {
     ${RUNGHC} Setup.*hs configure \
         ${EXTRA_CABAL_CONF} \
         --package-db="${GHC_PACKAGE_DATABASE}" \
-        --ghc-options='-pgmc ./ghc-cc
+        --ghc-options='-dynload deploy
+                       -pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --enable-shared \
@@ -116,7 +117,8 @@ do_configure() {
 do_compile() {
     pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs build \
-        --ghc-options='-pgmc ./ghc-cc
+        --ghc-options='-dynload deploy
+                       -pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --verbose
@@ -145,21 +147,3 @@ do_install() {
     install -m 644 ${S}/${HPN}-${HPV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
     popd > /dev/null
 }
-
-# Amend the rpath to match target environment.
-do_fixup_rpath() {
-    :
-}
-do_fixup_rpath_class-target() {
-    ghc_version=$(ghc-pkg --version)
-    ghc_version=${ghc_version##* }
-
-    RPATH=$(chrpath ${D}${libdir}/${HPN}-${HPV}/ghc-${ghc_version}/libHS${HPN}-${HPV}*.so)
-    RPATH=${RPATH##*RPATH=}
-    FIXED_RPATH=$(echo $RPATH | sed -e "s|${STAGING_LIBDIR}|${libdir}|g")
-
-    chrpath -r ${RPATH} --replace ${FIXED_RPATH} ${D}${libdir}/${HPN}-${HPV}/ghc-${ghc_version}/libHS${HPN}-${HPV}*.so
-
-}
-addtask do_fixup_rpath after do_install before do_package
-do_fixup_rpath[doc] = "Amend rpath set by GHC to comply with target's environment."
