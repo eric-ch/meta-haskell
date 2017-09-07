@@ -95,7 +95,7 @@ EOF
     popd > /dev/null
 }
 addtask do_makeup_wrappers before do_configure after do_patch
-do_local_package_conf[doc] = "Generate local wrappers for the compiler to pass bitbake environment through ghc."
+do_makeup_wrappers[doc] = "Generate local wrappers for the compiler to pass bitbake environment through ghc."
 
 do_configure() {
     pushd ${S} > /dev/null
