@@ -130,7 +130,11 @@ do_local_package_conf() {
     ${RUNGHC} Setup.*hs register \
         --gen-pkg-conf \
         --verbose
-    sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${HPV}*.conf
+    for pkgconf in ${S}/${HPN}-${HPV}*.conf; do
+        if [ -f "$pkgconf" ]; then
+            sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${HPV}*.conf
+        fi
+    done
     popd > /dev/null
 }
 addtask do_local_package_conf before do_install after do_compile
