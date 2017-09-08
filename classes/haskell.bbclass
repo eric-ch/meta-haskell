@@ -57,10 +57,12 @@ do_update_local_pkg_database_append_class-target() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
     for pkgconf in ${STAGING_LIBDIR}/ghc-${ghc_version}/package.conf.d/*.conf; do
-        sed -e "s| /usr/lib| ${STAGING_LIBDIR}|" \
-            -e "s| /usr/include| ${STAGING_INCDIR}|" \
-            $pkgconf | \
-        ghc-pkg -f "${GHC_PACKAGE_DATABASE}" --force update -
+        if [ -f "${pkgconf}" ]; then
+            sed -e "s| /usr/lib| ${STAGING_LIBDIR}|" \
+                -e "s| /usr/include| ${STAGING_INCDIR}|" \
+                $pkgconf | \
+            ghc-pkg -f "${GHC_PACKAGE_DATABASE}" --force update -
+        fi
     done
     ghc-pkg -f "${GHC_PACKAGE_DATABASE}" recache
 }
@@ -68,10 +70,12 @@ do_update_local_pkg_database_append_class-native() {
     ghc_version=$(ghc-pkg --version)
     ghc_version=${ghc_version##* }
     for pkgconf in ${STAGING_LIBDIR_NATIVE}/ghc-${ghc_version}/package.conf.d/*.conf; do
-        sed -e "s| /usr/lib| ${STAGING_LIBDIR_NATIVE}|" \
-            -e "s| /usr/include| ${STAGING_INCDIR_NATIVE}|" \
-            $pkgconf | \
-        ghc-pkg -f "${GHC_PACKAGE_DATABASE}" --force update -
+        if [ -f "${pkgconf}" ]; then
+            sed -e "s| /usr/lib| ${STAGING_LIBDIR_NATIVE}|" \
+                -e "s| /usr/include| ${STAGING_INCDIR_NATIVE}|" \
+                $pkgconf | \
+            ghc-pkg -f "${GHC_PACKAGE_DATABASE}" --force update -
+        fi
     done
     ghc-pkg -f "${GHC_PACKAGE_DATABASE}" recache
 }
@@ -122,11 +126,9 @@ do_local_package_conf() {
     ${RUNGHC} Setup.*hs register \
         --gen-pkg-conf \
         --verbose
-    for pkgconf in ${S}/${HPN}-${HPV}*.conf; do
-        if [ -f "$pkgconf" ]; then
-            sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${HPV}*.conf
-        fi
-    done
+    if [ -f "${S}/${HPN}-${HPV}.conf" ]; then
+        sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${HPV}.conf
+    fi
 }
 addtask do_local_package_conf before do_install after do_compile
 do_local_package_conf[doc] = "Generate Haskell package configuration."
@@ -135,8 +137,10 @@ do_install() {
     ${RUNGHC} Setup.*hs install --verbose
 
     # Prepare GHC package database files.
-    ghc_version=$(ghc-pkg --version)
-    ghc_version=${ghc_version##* }
-    install -m 755 -d ${D}${libdir}/ghc-${ghc_version}/package.conf.d
-    install -m 644 ${S}/${HPN}-${HPV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
+    if [ -f "${S}/${HPN}-${HPV}.conf" ]; then
+        ghc_version=$(ghc-pkg --version)
+        ghc_version=${ghc_version##* }
+        install -m 755 -d ${D}${libdir}/ghc-${ghc_version}/package.conf.d
+        install -m 644 ${S}/${HPN}-${HPV}.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
+    fi
 }
