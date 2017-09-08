@@ -42,7 +42,6 @@ GHC_PACKAGE_DATABASE = "local-packages.db"
 export GHC_PACKAGE_PATH = "${S}/${GHC_PACKAGE_DATABASE}"
 
 do_update_local_pkg_database() {
-    cd ${S} > /dev/null
     # Build the local package database for runghc to process dependencies.
     rm -rf "${GHC_PACKAGE_DATABASE}"
     ghc-pkg init "${GHC_PACKAGE_DATABASE}"
@@ -81,7 +80,6 @@ do_update_local_pkg_database_append_class-native() {
 # per bitbake to runghc. One might think of using --ghc-options="-pgmc ${CC%%
 # *} -otpc ${CC#* }" but no... it does not manage to parse the options correctly...
 do_makeup_wrappers() {
-    pushd ${S} > /dev/null
     cat << EOF > ghc-cc
 #!/bin/sh
 exec ${CC} ${CFLAGS} "\$@"
@@ -93,15 +91,12 @@ EOF
 exec ${CCLD} ${LDFLAGS} "\$@"
 EOF
     chmod +x ghc-ld
-    popd > /dev/null
 }
 addtask do_makeup_wrappers before do_configure after do_patch
 do_makeup_wrappers[doc] = "Generate local wrappers for the compiler to pass bitbake environment through ghc."
 
 do_configure() {
-    pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs clean --verbose
-    # TODO: Setup.hs || Setup.lhs
     ${RUNGHC} Setup.*hs configure \
         ${EXTRA_CABAL_CONF} \
         --package-db="${GHC_PACKAGE_DATABASE}" \
@@ -112,22 +107,18 @@ do_configure() {
         --enable-shared \
         --prefix="${D}${prefix}" \
         --verbose
-    popd > /dev/null
 }
 
 do_compile() {
-    pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs build \
         --ghc-options='-dynload deploy
                        -pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --verbose
-    popd > /dev/null
 }
 
 do_local_package_conf() {
-    pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs register \
         --gen-pkg-conf \
         --verbose
@@ -136,13 +127,11 @@ do_local_package_conf() {
             sed -i -e "s| ${D}${prefix}| ${prefix}|" ${S}/${HPN}-${HPV}*.conf
         fi
     done
-    popd > /dev/null
 }
 addtask do_local_package_conf before do_install after do_compile
 do_local_package_conf[doc] = "Generate Haskell package configuration."
 
 do_install() {
-    pushd ${S} > /dev/null
     ${RUNGHC} Setup.*hs install --verbose
 
     # Prepare GHC package database files.
@@ -150,5 +139,4 @@ do_install() {
     ghc_version=${ghc_version##* }
     install -m 755 -d ${D}${libdir}/ghc-${ghc_version}/package.conf.d
     install -m 644 ${S}/${HPN}-${HPV}*.conf ${D}${libdir}/ghc-${ghc_version}/package.conf.d
-    popd > /dev/null
 }
