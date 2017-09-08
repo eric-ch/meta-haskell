@@ -1,6 +1,6 @@
 DESCRIPTION = "Parser/Serialiser for IEEE-754 Float and Decimal values to/from raw octets."
 LICENSE = "BSD-3-Clause"
-LIC_FILES_CHKSUM = "file://LICENSE;md5=d32239bcb673463ab874e80d47fae504"
+LIC_FILES_CHKSUM = "file://Licence.txt;md5=d32239bcb673463ab874e80d47fae504"
 
 inherit hackage
 
