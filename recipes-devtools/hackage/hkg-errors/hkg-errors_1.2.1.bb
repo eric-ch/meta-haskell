@@ -11,5 +11,10 @@ FILESEXTRAPATHS_prepend := "${THISDIR}/patches:"
 SRC_URI =+ " \
     file://errors-cheat-cabal.patch \
 "
+DEPENDS += " \
+    hkg-safe \
+    hkg-transformers \
+    hkg-either \
+"
 
 PR = "r1"
