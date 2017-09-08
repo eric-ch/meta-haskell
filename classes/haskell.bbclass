@@ -16,22 +16,23 @@ PACKAGES = " \
     ${PN}-dbg \
     ${PN}-dev \
 "
-FILES_${PN} = " \
+FILES_${PN} =+ " \
     ${libdir}/${HPN}-${HPV}/ghc-*/libH*.so \
     ${libdir}/ghc-*/package.conf.d/*.conf \
     ${bindir}/* \
 "
-FILES_${PN}-doc = " \
+FILES_${PN}-doc =+ " \
     ${datadir}/* \
 "
-FILES_${PN}-staticdev = " \
+FILES_${PN}-staticdev =+ " \
     ${libdir}/${HPN}-${HPV}/ghc-*/libHS*.a \
 "
-FILES_${PN}-dbg = " \
+FILES_${PN}-dbg =+ " \
     ${libdir}/${HPN}-${HPV}/ghc-*/*.o \
+    ${libdir}/${HPN}-${HPV}/ghc-*/.debug \
     ${prefix}/src/debug \
 "
-FILES_${PN}-dev = " \
+FILES_${PN}-dev =+ " \
     ${libdir}/${HPN}-${HPV}/ghc-*/* \
 "
 
