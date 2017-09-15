@@ -105,7 +105,7 @@ do_configure() {
     ${RUNGHC} Setup.*hs configure \
         ${EXTRA_CABAL_CONF} \
         --package-db="${GHC_PACKAGE_DATABASE}" \
-        --ghc-options='-dynload deploy
+        --ghc-options='-dynload sysdep
                        -pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
@@ -116,7 +116,7 @@ do_configure() {
 
 do_compile() {
     ${RUNGHC} Setup.*hs build \
-        --ghc-options='-dynload deploy
+        --ghc-options='-dynload sysdep
                        -pgmc ./ghc-cc
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
@@ -133,6 +133,42 @@ do_local_package_conf() {
 }
 addtask do_local_package_conf before do_install after do_compile
 do_local_package_conf[doc] = "Generate Haskell package configuration."
+
+# Amend the rpath to match target environment. This is because a lot of dynamic
+# libraries will be installed in non-standard sub-directories of ${libdir}.  It
+# could be configured through LD_LIBRARY_PATH, ld.so.conf, etc... but the
+# easiest, since we are aware of the target system configuration is to embedded
+# a valid RPATH in the binary.
+do_fixup_rpath() {
+    :
+}
+do_fixup_rpath_class-target() {
+    ghc_version=$(ghc-pkg --version)
+    ghc_version=${ghc_version##* }
+
+    for f in \
+        ${D}${libdir}/${HPN}-${HPV}/ghc-${ghc_version}/libHS${HPN}-${HPV}*.so \
+        ${D}${bindir}/* \
+        ${D}${sbindir}/*
+    do
+        if [ ! -e ${f} ]; then
+            continue
+        fi
+
+        f_type="$(file -b ${f})"
+        if [ "${f_type%% *}" = "ELF" ]; then
+            if ! RPATH="$(chrpath ${f})" ; then
+                continue
+            fi
+            RPATH=${RPATH##*RPATH=}
+            FIXED_RPATH=$(echo $RPATH | sed -e "s|${STAGING_DIR_HOST}||g")
+            chrpath -r "${RPATH}" --replace "${FIXED_RPATH}" "${f}"
+        fi
+    done
+
+}
+addtask do_fixup_rpath after do_install before do_package
+do_fixup_rpath[doc] = "Amend rpath set by GHC to comply with target's environment."
 
 do_install() {
     ${RUNGHC} Setup.*hs install --verbose
