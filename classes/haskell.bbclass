@@ -110,7 +110,7 @@ do_configure() {
                        -pgml ./ghc-ld' \
         --with-gcc="./ghc-cc" \
         --enable-shared \
-        --prefix="${D}${prefix}" \
+        --prefix="${prefix}" \
         --verbose
 }
 
@@ -171,7 +171,7 @@ addtask do_fixup_rpath after do_install before do_package
 do_fixup_rpath[doc] = "Amend rpath set by GHC to comply with target's environment."
 
 do_install() {
-    ${RUNGHC} Setup.*hs install --verbose
+    ${RUNGHC} Setup.*hs copy --copy-prefix="${D}/${prefix}" --verbose
 
     # Prepare GHC package database files.
     if [ -f "${S}/${HPN}-${HPV}.conf" ]; then
