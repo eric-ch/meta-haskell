@@ -1,0 +1,15 @@
+Index: ghc-6.12.3/libraries/unix/configure
+===================================================================
+--- ghc-6.12.3.orig/libraries/unix/configure	2017-09-21 00:28:55.731044056 -0400
++++ ghc-6.12.3/libraries/unix/configure	2017-09-21 00:30:04.173405215 -0400
+@@ -6654,6 +6654,10 @@
+ 	PTHREAD_CFLAGS=-pthread
+ 	PTHREAD_LDFLAGS=-pthread
+ 	;;
++linux*)
++	PTHREAD_CFLAGS=-pthread
++	PTHREAD_LDFLAGS=-pthread
++	;;
+ esac
+ 
+ 

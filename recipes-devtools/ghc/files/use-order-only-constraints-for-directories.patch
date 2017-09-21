@@ -1,0 +1,412 @@
+From 883d980815437736c486bf69b2f066ef918d2989 Mon Sep 17 00:00:00 2001
+From: Ian Lynagh <igloo@earth.li>
+Date: Fri, 2 Oct 2009 19:12:18 +0000
+Subject: [PATCH] Use "order only constraints" for directories There are now
+ 104 calls to mkdirhier, down from 1201, when validating.
+
+---
+ compiler/ghc.mk                 |  6 ++----
+ ghc.mk                          | 22 ++++++++++++++++------
+ rts/ghc.mk                      |  6 ++----
+ rules/build-dependencies.mk     |  3 +--
+ rules/build-perl.mk             |  6 ++----
+ rules/build-prog.mk             |  9 +++------
+ rules/c-suffix-rules.mk         | 12 ++++--------
+ rules/cmm-suffix-rules.mk       | 18 ++++++------------
+ rules/haddock.mk                |  3 +--
+ rules/hs-suffix-rules-srcdir.mk | 15 +++++----------
+ utils/ghc-cabal/ghc.mk          | 10 +++-------
+ utils/ghc-pkg/ghc.mk            |  7 ++-----
+ utils/mkdependC/ghc.mk          |  3 +--
+ utils/runghc/ghc.mk             |  3 +--
+ 14 files changed, 49 insertions(+), 74 deletions(-)
+
+Index: ghc-6.12.3/compiler/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/compiler/ghc.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/compiler/ghc.mk	2017-09-20 23:43:04.489739135 -0400
+@@ -141,8 +141,7 @@
+ 
+ PLATFORM_H = ghc_boot_platform.h
+ 
+-compiler/stage1/$(PLATFORM_H) : mk/config.mk mk/project.mk
+-	"$(MKDIRHIER)" $(dir $@)
++compiler/stage1/$(PLATFORM_H) : mk/config.mk mk/project.mk | $$(dir $$@)/.
+ 	"$(RM)" $(RM_OPTS) $@
+ 	@echo "Creating $@..."
+ 	@echo "#ifndef __PLATFORM_H__"  >$@
+@@ -188,8 +187,7 @@
+ # For stage2 and above, the BUILD platform is the HOST of stage1, and
+ # the HOST platform is the TARGET of stage1.  The TARGET remains the same
+ # (stage1 is the cross-compiler, not stage2).
+-compiler/stage2/$(PLATFORM_H) : mk/config.mk mk/project.mk
+-	"$(MKDIRHIER)" $(dir $@)
++compiler/stage2/$(PLATFORM_H) : mk/config.mk mk/project.mk | $$(dir $$@)/.
+ 	"$(RM)" $(RM_OPTS) $@
+ 	@echo "Creating $@..."
+ 	@echo "#ifndef __PLATFORM_H__"  >$@
+Index: ghc-6.12.3/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/ghc.mk	2010-06-09 14:10:12.000000000 -0400
++++ ghc-6.12.3/ghc.mk	2017-09-20 23:46:24.803635395 -0400
+@@ -88,6 +88,11 @@
+ # expands to the directoy of a rule that uses a % pattern.
+ .SECONDEXPANSION:
+ 
++# We need second expansion for the way we handle directories, so that
++#     | $$$$(dir $$$$@)/.
++# expands to the directoy of a rule that uses a % pattern.
++.SECONDEXPANSION:
++
+ default : all
+ 
+ # Catch make if it runs away into an infinite loop
+@@ -412,6 +417,12 @@
+ # -----------------------------------------------------------------------------
+ # Directories
+ 
++%/. : $(MKDIRHIER)
++	"$(MKDIRHIER)" $@
++
++# -----------------------------------------------------------------------------
++# Directories
++
+ # Don't try to delete directories:
+ .PRECIOUS: %/.
+ 
+@@ -442,8 +453,7 @@
+ 
+ PRIMOPS_TXT = $(GHC_COMPILER_DIR)/prelude/primops.txt
+ 
+-libraries/ghc-prim/dist-install/build/GHC/PrimopWrappers.hs : $(GENPRIMOP_INPLACE) $(PRIMOPS_TXT)
+-	"$(MKDIRHIER)" $(dir $@)
++libraries/ghc-prim/dist-install/build/GHC/PrimopWrappers.hs : $(GENPRIMOP_INPLACE) $(PRIMOPS_TXT) | $$(dir $$@)/.
+ 	"$(GENPRIMOP_INPLACE)" --make-haskell-wrappers <$(PRIMOPS_TXT) >$@
+ 
+ libraries/ghc-prim/GHC/Prim.hs : $(GENPRIMOP_INPLACE) $(PRIMOPS_TXT)
+@@ -729,13 +739,13 @@
+ endif # BINDIST
+ 
+ libraries/ghc-prim/dist-install/build/autogen/GHC/Prim.hs: \
+-                            $(PRIMOPS_TXT) $(GENPRIMOP_INPLACE) $(MKDIRHIER)
+-	"$(MKDIRHIER)" $(dir $@)
++                            $(PRIMOPS_TXT) $(GENPRIMOP_INPLACE) \
++                          | $$(dir $$@)/.
+ 	"$(GENPRIMOP_INPLACE)" --make-haskell-source < $< > $@
+ 
+ libraries/ghc-prim/dist-install/build/autogen/GHC/PrimopWrappers.hs: \
+-                            $(PRIMOPS_TXT) $(GENPRIMOP_INPLACE) $(MKDIRHIER)
+-	"$(MKDIRHIER)" $(dir $@)
++                            $(PRIMOPS_TXT) $(GENPRIMOP_INPLACE) \
++                          | $$(dir $$@)/.
+ 	"$(GENPRIMOP_INPLACE)" --make-haskell-wrappers < $< > $@
+ 
+ # -----------------------------------------------------------------------------
+Index: ghc-6.12.3/rts/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/rts/ghc.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rts/ghc.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -62,11 +62,9 @@
+ $(rts_AUTO_APPLY_CMM): $(GENAPPLY_INPLACE)
+ 	"$(GENAPPLY_INPLACE)" >$@
+ 
+-rts/dist/build/sm/Evac_thr.c : rts/sm/Evac.c
+-	"$(MKDIRHIER)" $(dir $@)
++rts/dist/build/sm/Evac_thr.c : rts/sm/Evac.c | $$(dir $$@)/.
+ 	cp $< $@
+-rts/dist/build/sm/Scav_thr.c : rts/sm/Scav.c
+-	"$(MKDIRHIER)" $(dir $@)
++rts/dist/build/sm/Scav_thr.c : rts/sm/Scav.c | $$(dir $$@)/.
+ 	cp $< $@
+ 
+ rts_H_FILES = $(wildcard includes/*.h) $(wildcard rts/*.h)
+Index: ghc-6.12.3/rules/build-dependencies.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/build-dependencies.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/build-dependencies.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -27,8 +27,7 @@
+ 
+ ifneq "$$($1_$2_NO_BUILD_DEPS)" "YES"
+ 
+-$$($1_$2_depfile) : $$(MKDIRHIER) $$(MKDEPENDC) $$($1_$2_HS_SRCS) $$($1_$2_HS_BOOT_SRCS) $$($1_$2_HC_MK_DEPEND_DEP) $$($1_$2_C_FILES) $$($1_$2_S_FILES)
+-	"$$(MKDIRHIER)" $1/$2/build
++$$($1_$2_depfile) : $$(MKDEPENDC) $$($1_$2_HS_SRCS) $$($1_$2_HS_BOOT_SRCS) $$($1_$2_HC_MK_DEPEND_DEP) $$($1_$2_C_FILES) $$($1_$2_S_FILES) | $$$$(dir $$$$@)/.
+ 	"$$(RM)" $$(RM_OPTS) $$@.tmp
+ 	touch $$@.tmp
+ ifneq "$$($1_$2_C_SRCS)$$($1_$2_S_SRCS)" ""
+Index: ghc-6.12.3/rules/build-perl.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/build-perl.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/build-perl.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -37,8 +37,7 @@
+ # INPLACE_BIN etc. might be empty if we're cleaning
+ ifeq "$(findstring clean,$(MAKECMDGOALS))" ""
+ ifneq "$$(BINDIST)" "YES"
+-$1/$2/$$($1_$2_PROG).prl: $1/$$($1_PERL_SRC) $$(UNLIT)
+-	"$$(MKDIRHIER)" $1/$2
++$1/$2/$$($1_$2_PROG).prl: $1/$$($1_PERL_SRC) $$(UNLIT) | $$$$(dir $$$$@)/.
+ 	"$$(UNLIT)" $$(UNLIT_OPTS) $$< $$@
+ endif
+ 
+@@ -48,8 +47,7 @@
+ 	echo '$$$$TARGETPLATFORM  = "$$(TARGETPLATFORM)";' >> $$@
+ 	cat $$<                                            >> $$@
+ 
+-$$($1_$2_INPLACE): $1/$2/$$($1_$2_PROG)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$$($1_$2_INPLACE): $1/$2/$$($1_$2_PROG) | $$$$(dir $$$$@)/.
+ 	"$$(CP)" $$< $$@
+ 	$$(EXECUTABLE_FILE) $$@
+ 
+Index: ghc-6.12.3/rules/build-prog.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/build-prog.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/build-prog.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -107,12 +107,10 @@
+ $(call hs-objs,$1,$2,v)
+ 
+ ifeq "$$(BootingFromHc)" "NO"
+-$1/$2/build/tmp/$$($1_$2_PROG) : $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/tmp/$$($1_$2_PROG) : $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" -o $$@ $$($1_$2_v_ALL_HC_OPTS) $$(LD_OPTS) $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS)
+ else
+-$1/$2/build/tmp/$$($1_$2_PROG) : $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/tmp/$$($1_$2_PROG) : $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS) | $$$$(dir $$$$@)/.
+ 	"$$(CC)" -o $$@ $$($1_$2_v_ALL_CC_OPTS) $$(LD_OPTS) $$($1_$2_v_HS_OBJS) $$($1_$2_v_C_OBJS) $$($1_$2_v_S_OBJS) $$($1_$2_OTHER_OBJS) $$($1_$2_v_EXTRA_CC_OPTS)
+ endif
+ 
+@@ -147,8 +145,7 @@
+ 
+ # INPLACE_BIN might be empty if we're distcleaning
+ ifeq "$(findstring clean,$(MAKECMDGOALS))" ""
+-$$($1_$2_INPLACE) : $1/$2/build/tmp/$$($1_$2_PROG) $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$$($1_$2_INPLACE) : $1/$2/build/tmp/$$($1_$2_PROG) | $$$$(dir $$$$@)/.
+ 	"$$(CP)" -p $$< $$@
+ 	touch $$@
+ endif
+Index: ghc-6.12.3/rules/c-suffix-rules.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/c-suffix-rules.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/c-suffix-rules.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -20,8 +20,7 @@
+ # UseGhcForCc is only relevant when not booting from HC files.
+ ifeq "$4 $$(BootingFromHc)" "YES NO"
+ 
+-$1/$2/build/%.$$($3_osuf) : $1/%.c $$(MKDIRHIER) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_osuf) : $1/%.c $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_GHC_CC_OPTS) -c $$< -o $$@
+ 
+ $1/$2/build/%.$$($3_osuf) : $1/$2/build/%.c $$($1_$2_HC_DEP)
+@@ -30,8 +29,7 @@
+ $1/$2/build/%.$$($3_osuf) : $1/$2/build/%.$$($3_way_)s $$($1_$2_HC_DEP)
+ 	"$$($1_$2_HC)" $$($1_$2_$3_GHC_CC_OPTS) -c $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_osuf) : $1/%.S $$(MKDIRHIER) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_osuf) : $1/%.S $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_GHC_CC_OPTS) -c $$< -o $$@
+ 
+ $1/$2/build/%.$$($3_way_)s : $1/$2/build/%.c $$($1_$2_HC_DEP)
+@@ -42,8 +40,7 @@
+ 
+ else
+ 
+-$1/$2/build/%.$$($3_osuf) : $1/%.c $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_osuf) : $1/%.c | $$$$(dir $$$$@)/.
+ 	"$$(CC)" $$($1_$2_$3_ALL_CC_OPTS) -c $$< -o $$@
+ 
+ $1/$2/build/%.$$($3_osuf) : $1/$2/build/%.c
+@@ -52,8 +49,7 @@
+ $1/$2/build/%.$$($3_osuf) : $1/$2/build/%.$$($3_way_)s
+ 	"$$(AS)" $$($1_$2_$3_ALL_AS_OPTS) -o $$@ $$<
+ 
+-$1/$2/build/%.$$($3_osuf) : $1/%.S $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_osuf) : $1/%.S | $$$$(dir $$$$@)/.
+ 	"$$(CC)" $$($1_$2_$3_ALL_CC_OPTS) -c $$< -o $$@
+ 
+ $1/$2/build/%.$$($3_way_)s : $1/$2/build/%.c
+Index: ghc-6.12.3/rules/cmm-suffix-rules.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/cmm-suffix-rules.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/cmm-suffix-rules.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -22,28 +22,22 @@
+ 
+ ifneq "$$(BootingFromHc)" "YES"
+ 
+-$1/$2/build/%.$$($3_way_)o : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)o : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -c $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_way_)o : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)o : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -c $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_way_)hc : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)hc : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -C $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_way_)hc : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)hc : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -C $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_way_)s : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)s : $1/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -S $$< -o $$@
+ 
+-$1/$2/build/%.$$($3_way_)s : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_way_)s : $1/$2/build/%.cmm $$(rts_H_FILES) $$($1_$2_HC_DEP) | $$$$(dir $$$$@)/.
+ 	"$$($1_$2_HC)" $$($1_$2_$3_MOST_HC_OPTS) -S $$< -o $$@
+ 
+ endif
+Index: ghc-6.12.3/rules/haddock.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/haddock.mk	2017-09-20 23:43:04.493072422 -0400
++++ ghc-6.12.3/rules/haddock.mk	2017-09-20 23:44:36.025139473 -0400
+@@ -38,8 +38,7 @@
+ endif
+ 
+ ifneq "$$(BINDIST)" "YES"
+-$$($$($1_PACKAGE)_HADDOCK_FILE) : $$(MKDIRHIER) $$(INPLACE_BIN)/haddock$$(exeext) $$(GHC_CABAL_INPLACE) $$($1_$2_HS_SRCS) $$($$($1_PACKAGE)_HADDOCK_DEPS)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$$($$($1_PACKAGE)_HADDOCK_FILE) : $$(INPLACE_BIN)/haddock$$(exeext) $$(GHC_CABAL_INPLACE) $$($1_$2_HS_SRCS) $$($$($1_PACKAGE)_HADDOCK_DEPS) | $$$$(dir $$$$@)/.
+ 	"$$(GHC_CABAL_INPLACE)" haddock $2 $1 --with-haddock=$$(TOP)/$$(INPLACE_BIN)/haddock --with-ghc=$$(TOP)/$$(INPLACE_BIN)/ghc-stage2 $$($1_$2_HADDOCK_FLAGS) $$($1_$2_HADDOCK_OPTS)
+ 
+ # Make the haddocking depend on the library .a file, to ensure
+Index: ghc-6.12.3/rules/hs-suffix-rules-srcdir.mk
+===================================================================
+--- ghc-6.12.3.orig/rules/hs-suffix-rules-srcdir.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/rules/hs-suffix-rules-srcdir.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -18,20 +18,16 @@
+ 
+ ifneq "$$(BootingFromHc)" "YES"
+ 
+-$1/$2/build/%.hs : $1/$4/%.ly $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.hs : $1/$4/%.ly | $$$$(dir $$$$@)/.
+ 	"$$(HAPPY)" $$($1_$2_$3_ALL_HAPPY_OPTS) $$< -o $$@
+ 
+-$1/$2/build/%.hs : $1/$4/%.y $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.hs : $1/$4/%.y | $$$$(dir $$$$@)/.
+ 	"$$(HAPPY)" $$($1_$2_$3_ALL_HAPPY_OPTS) $$< -o $$@
+ 
+-$1/$2/build/%.hs : $1/$4/%.x $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.hs : $1/$4/%.x | $$$$(dir $$$$@)/.
+ 	"$$(ALEX)" $$($1_$2_$3_ALL_ALEX_OPTS) $$< -o $$@
+ 
+-$1/$2/build/%_hsc.c $1/$2/build/%_hsc.h $1/$2/build/%.hs : $1/$4/%.hsc $$(HSC2HS_INPLACE)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%_hsc.c $1/$2/build/%_hsc.h $1/$2/build/%.hs : $1/$4/%.hsc $$(HSC2HS_INPLACE) | $$$$(dir $$$$@)/.
+ 	"$$(HSC2HS_INPLACE)" $$($1_$2_$3_ALL_HSC2HS_OPTS) $$< -o $$@
+ 
+ # Compiling Haskell source
+@@ -53,8 +49,7 @@
+ # XXX: for some reason these get used in preference to the direct
+ # .hs->.o rule, I don't know why --SDM
+ 
+-$1/$2/build/%.$$($3_osuf) : $1/$4/%.hc includes/ghcautoconf.h includes/ghcplatform.h $$(MKDIRHIER)
+-	"$$(MKDIRHIER)" $$(dir $$@)
++$1/$2/build/%.$$($3_osuf) : $1/$4/%.hc includes/ghcautoconf.h includes/ghcplatform.h | $$$$(dir $$$$@)/.
+ 	"$$(CC)" $$($1_$2_$3_ALL_CC_OPTS) -Iincludes -x c -c $$< -o $$@
+ 
+ $1/$2/build/%.$$($3_osuf) : $1/$2/build/%.hc includes/ghcautoconf.h includes/ghcplatform.h
+Index: ghc-6.12.3/utils/ghc-cabal/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/utils/ghc-cabal/ghc.mk	2017-09-20 23:43:04.493072422 -0400
++++ ghc-6.12.3/utils/ghc-cabal/ghc.mk	2017-09-20 23:45:54.190725262 -0400
+@@ -18,17 +18,14 @@
+ CABAL_VERSION := $(subst .,$(comma),$(CABAL_DOTTED_VERSION))
+ CABAL_CONSTRAINT := --constraint="Cabal == $(CABAL_DOTTED_VERSION)"
+ 
+-$(GHC_CABAL_INPLACE) : $(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext)
+-	"$(MKDIRHIER)" $(dir $@)
++$(GHC_CABAL_INPLACE) : $(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext) | $$(dir $$@)/.
+ 	"$(CP)" $< $@
+ 
+ $(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext): $(wildcard libraries/Cabal/Distribution/*/*/*.hs)
+ $(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext): $(wildcard libraries/Cabal/Distribution/*/*.hs)
+ $(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext): $(wildcard libraries/Cabal/Distribution/*.hs)
+ 
+-$(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext): $(GHC_CABAL_DIR)/ghc-cabal.hs $(MKDIRHIER)
+-	"$(MKDIRHIER)" bootstrapping
+-	"$(MKDIRHIER)" $(dir $@)
++$(GHC_CABAL_DIR)/dist/build/tmp/ghc-cabal$(exeext): $(GHC_CABAL_DIR)/ghc-cabal.hs | $$(dir $$@)/. bootstrapping/.
+ 	"$(GHC)" $(SRC_HC_OPTS) --make $(GHC_CABAL_DIR)/ghc-cabal.hs -o $@ \
+ 	       -Wall $(WERROR) \
+ 	       -DCABAL_VERSION=$(CABAL_VERSION) \
+@@ -58,8 +55,7 @@
+ $(GHC_CABAL_DIR)_dist-dummy-ghc_PROG    = dummy-ghc$(exeext)
+ 
+ # depend on project.mk, so we pick up the new version number if it changes.
+-$(GHC_CABAL_DIR)/dist-dummy-ghc/build/dummy-ghc.hs : $(GHC_CABAL_DIR)/ghc.mk $(MKDIRHIER) mk/project.mk compiler/main/DynFlags.hs
+-	"$(MKDIRHIER)" $(dir $@)
++$(GHC_CABAL_DIR)/dist-dummy-ghc/build/dummy-ghc.hs : $(GHC_CABAL_DIR)/ghc.mk mk/project.mk | $$(dir $$@)/.
+ 	"$(RM)" $(RM_OPTS) $@
+ 	echo 'import System.Environment'                                  >> $@
+ 	echo 'import System.Cmd'                                          >> $@
+Index: ghc-6.12.3/utils/ghc-pkg/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/utils/ghc-pkg/ghc.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/utils/ghc-pkg/ghc.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -30,8 +30,7 @@
+ 
+ else
+ 
+-$(GHC_PKG_INPLACE) : utils/ghc-pkg/dist/build/$(utils/ghc-pkg_dist_PROG)$(exeext) $(MKDIRHIER)
+-	"$(MKDIRHIER)" $(INPLACE_PACKAGE_CONF)
++$(GHC_PKG_INPLACE) : utils/ghc-pkg/dist/build/$(utils/ghc-pkg_dist_PROG)$(exeext) | $$(dir $$@)/. $(INPLACE_PACKAGE_CONF)/.
+ 	"$(RM)" $(RM_OPTS) $(INPLACE_PACKAGE_CONF)/*
+ ifeq "$(Windows)" "YES"
+ 	cp $< $@
+@@ -47,9 +46,7 @@
+ 
+ # depend on ghc-cabal, otherwise we build Cabal twice when building in parallel
+ # The binary package is not warning-clean, so we need a few -fno-warns here.
+-utils/ghc-pkg/dist/build/$(utils/ghc-pkg_dist_PROG)$(exeext): utils/ghc-pkg/Main.hs utils/ghc-pkg/Version.hs $(GHC_CABAL_INPLACE) $(MKDIRHIER)
+-	"$(MKDIRHIER)" bootstrapping
+-	"$(MKDIRHIER)" utils/ghc-pkg/dist/build
++utils/ghc-pkg/dist/build/$(utils/ghc-pkg_dist_PROG)$(exeext): utils/ghc-pkg/Main.hs utils/ghc-pkg/Version.hs $(GHC_CABAL_INPLACE) | bootstrapping/. $$(dir $$@)/.
+ 	"$(GHC)" $(SRC_HC_OPTS) --make utils/ghc-pkg/Main.hs -o $@ \
+ 	       -Wall -fno-warn-unused-imports \
+ 	       -DCABAL_VERSION=$(CABAL_VERSION) \
+Index: ghc-6.12.3/utils/mkdependC/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/utils/mkdependC/ghc.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/utils/mkdependC/ghc.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -10,8 +10,7 @@
+ #
+ # -----------------------------------------------------------------------------
+ 
+-$(MKDEPENDC) : utils/mkdependC/mkdependC.prl $(MKDIRHIER)
+-	"$(MKDIRHIER)" $(dir $@)
++$(MKDEPENDC) : utils/mkdependC/mkdependC.prl | $$(dir $$@)/.
+ 	"$(RM)" $(RM_OPTS) $@
+ 	echo '#!$(PERL)'                               >> $@
+ 	echo '$$DEFAULT_TMPDIR = "$(DEFAULT_TMPDIR)";' >> $@
+Index: ghc-6.12.3/utils/runghc/ghc.mk
+===================================================================
+--- ghc-6.12.3.orig/utils/runghc/ghc.mk	2017-09-20 23:43:01.633111998 -0400
++++ ghc-6.12.3/utils/runghc/ghc.mk	2017-09-20 23:43:04.493072422 -0400
+@@ -18,8 +18,7 @@
+ 
+ ifneq "$(BINDIST)" "YES"
+ # hack: the build system has trouble with Main modules not called Main.hs
+-utils/runghc/dist/build/Main.hs : utils/runghc/runghc.hs $(MKDIRHIER)
+-	"$(MKDIRHIER)" $(dir $@)
++utils/runghc/dist/build/Main.hs : utils/runghc/runghc.hs | $$(dir $$@)/.
+ 	"$(CP)" $< $@
+ endif
+ 
